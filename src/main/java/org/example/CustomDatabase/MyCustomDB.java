@@ -1,14 +1,22 @@
 package org.example.CustomDatabase;
 
+import java.lang.reflect.Field;
 import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 //Available choices are H2, derby, sqlite
-@Database(dbtype="h2",name="newdb")
-@Table(name="Student")
+@Database(dbtype="sqlite",name="newdb")
+@Table(name="Admin")
 public class MyCustomDB {
+
+    @TableColumn(name="Name", type="Text", initialValue="someName")
+    private String name;
+    @TableColumn(name="Password", type="Text", initialValue="somePassword")
+    private String password;
 
 
     public void createTableAndData(){
@@ -16,9 +24,9 @@ public class MyCustomDB {
             Connection connection = connect();
             //            default
             String createTableSQL = "CREATE TABLE IF NOT EXISTS D_USER"
-                    + "(ID INTEGER NOT NULL PRIMARY KEY,"
-                    + "USERNAME VARCHAR(20),"
-                    + "PASSWORD VARCHAR(20))";
+                    + "(ID INTEGER NOT NULL PRIMARY KEY,";
+//                    + "USERNAME VARCHAR(20),"
+//                    + "PASSWORD VARCHAR(20))";
             String insertSQL = "INSERT INTO D_USER VALUES(2,'PANTELIS','P12345')";
 
 
@@ -26,12 +34,35 @@ public class MyCustomDB {
             if(MyCustomDB.class.isAnnotationPresent(Table.class)) {
                 Table table = MyCustomDB.class.getAnnotation(Table.class);
                 createTableSQL = "CREATE TABLE "+ table.name()
-                        + "(ID INTEGER NOT NULL PRIMARY KEY,"
-                        + "USERNAME VARCHAR(20),"
-                        + "PASSWORD VARCHAR(20))";
-                insertSQL = "INSERT INTO "+table.name()+" VALUES(2,'PANTELIS','P12345')";
-
+                        + "(ID INTEGER NOT NULL PRIMARY KEY,";
+//                        + "USERNAME VARCHAR(20),"
+//                        + "PASSWORD VARCHAR(20))";
+                insertSQL = "INSERT INTO "+table.name()+" VALUES(2,";
             }
+
+//            If there are custom columns get their names
+            boolean ThereAreCustomColumns = false;
+            String mySQLcommand ="";
+            for(Field f: MyCustomDB.class.getDeclaredFields()){
+                if(f.isAnnotationPresent(TableColumn.class)){
+                    ThereAreCustomColumns=true;
+                    TableColumn cf = f.getAnnotation(TableColumn.class);
+                    System.out.println(cf.name()+cf.type());
+                    mySQLcommand+= cf.name()+" ";
+                    if(Objects.equals(cf.type(), "Text")){
+                        mySQLcommand+="VARCHAR(20),";
+                    }
+                    insertSQL+="'"+cf.initialValue()+"',";
+                }
+            }
+            mySQLcommand = mySQLcommand.substring(0, mySQLcommand.length() - 1);
+            mySQLcommand+=")";
+            createTableSQL+=mySQLcommand;
+            System.out.println(createTableSQL);
+
+            insertSQL = insertSQL.substring(0, insertSQL.length() - 1);
+            insertSQL+=")";
+            System.out.println(insertSQL);
 
             Statement statement = connection.createStatement();
             statement.executeUpdate(createTableSQL);
@@ -73,6 +104,7 @@ public class MyCustomDB {
 
     public void selectAll(){
         try {
+
             Connection connection = connect();
             Statement statement = connection.createStatement();
             String selectSQL = "select * from D_USER";
@@ -82,9 +114,25 @@ public class MyCustomDB {
                 selectSQL = "select * from "+table.name();
             }
             ResultSet resultSet = statement.executeQuery(selectSQL);
-            while(resultSet.next()){
-                System.out.println(resultSet.getString("USERNAME")+","+resultSet.getString("PASSWORD"));
+            boolean ThereAreCustomColumns = false;
+            List<String> list = new ArrayList<>();
+            for(Field f: MyCustomDB.class.getDeclaredFields()){
+                if(f.isAnnotationPresent(TableColumn.class)) {
+                    ThereAreCustomColumns = true;
+                    TableColumn cf = f.getAnnotation(TableColumn.class);
+                    list.add(cf.name());
+                }
             }
+            if(ThereAreCustomColumns){
+                while(resultSet.next()){
+                    System.out.println(resultSet.getString(list.get(0))+","+resultSet.getString(list.get(1)));
+                }
+            }else {
+                while(resultSet.next()){
+                    System.out.println(resultSet.getString("USERNAME")+","+resultSet.getString("PASSWORD"));
+                }
+            }
+
             statement.close();
             connection.close();
             System.out.println("Done!");

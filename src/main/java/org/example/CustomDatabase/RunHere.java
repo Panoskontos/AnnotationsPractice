@@ -2,7 +2,7 @@ package org.example.CustomDatabase;
 
 public class RunHere {
     public static void main(String[] args) {
-        System.out.println("hi");
+//        System.out.println("hi");
         MyCustomDB mcdb = new MyCustomDB();
         mcdb.createTableAndData();
         mcdb.insertNewUser(3,"Panos","12345");
