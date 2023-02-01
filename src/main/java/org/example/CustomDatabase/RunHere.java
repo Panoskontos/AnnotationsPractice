@@ -8,6 +8,7 @@ public class RunHere {
         mcdb.insertNewUser(3,"Panos","12345");
         mcdb.insertNewUser(4,"Nik","22222");
         mcdb.insertNewUser(5,"Logan","22222");
+        mcdb.updateUser(4,"Nikola Tesla","555555");
         mcdb.deleteUser(5);
         mcdb.selectAll();
 

@@ -9,7 +9,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 //Available choices are H2, derby, sqlite
-@Database(dbtype="sqlite",name="newdb")
+@Database(dbtype="h2",name="newdb")
 @Table(name="Admin")
 public class MyCustomDB {
 
@@ -114,6 +114,8 @@ public class MyCustomDB {
                 selectSQL = "select * from "+table.name();
             }
             ResultSet resultSet = statement.executeQuery(selectSQL);
+
+//            get table names
             boolean ThereAreCustomColumns = false;
             List<String> list = new ArrayList<>();
             for(Field f: MyCustomDB.class.getDeclaredFields()){
@@ -154,6 +156,43 @@ public class MyCustomDB {
             preparedStatement.setInt(1, id);
             preparedStatement.setString(2, username);
             preparedStatement.setString(3, password);
+            int count = preparedStatement.executeUpdate();
+            if(count>0){
+                System.out.println(count+" record updated");
+            }
+            preparedStatement.close();
+            connection.close();
+            System.out.println("Done!");
+        } catch (SQLException ex) {
+            Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
+    public void updateUser(int id, String username, String password){
+        try {
+            Connection connection = connect();
+            String updateSQL = "UPDATE D_USER SET USERNAME = ?, PASSWORD = ? WHERE ID = ?";
+            // If there is table annotation
+            if(MyCustomDB.class.isAnnotationPresent(Table.class)) {
+                Table table = MyCustomDB.class.getAnnotation(Table.class);
+
+//                Get table names
+                List<String> list = new ArrayList<>();
+                for(Field f: MyCustomDB.class.getDeclaredFields()){
+                    if(f.isAnnotationPresent(TableColumn.class)) {
+                        TableColumn cf = f.getAnnotation(TableColumn.class);
+                        list.add(cf.name());
+                    }
+                }
+
+
+                updateSQL = " UPDATE "+table.name()+" SET "+list.get(0)+" = ?, "+list.get(1)+" = ? WHERE ID = ?";
+            }
+            System.out.println(updateSQL);
+            PreparedStatement preparedStatement = connection.prepareStatement(updateSQL);
+            preparedStatement.setInt(3, id);
+            preparedStatement.setString(1, username);
+            preparedStatement.setString(2, password);
             int count = preparedStatement.executeUpdate();
             if(count>0){
                 System.out.println(count+" record updated");
